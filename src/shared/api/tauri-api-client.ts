@@ -5,6 +5,7 @@ export interface ZapretListsDto {
   list_general_user: string;
   list_exclude: string;
   list_exclude_user: string;
+  list_google: string;
   ipset_all: string;
   ipset_exclude: string;
   ipset_exclude_user: string;
@@ -14,6 +15,12 @@ export interface ZapretStrategyDto {
   id: string;
   label: string;
   description: string;
+  /** Описание портов (TCP/UDP) */
+  protocols: string;
+  /** Режимы DPI-desync */
+  modes: string;
+  /** Аргументы для winws с плейсхолдерами (списки подставляются при запуске) */
+  args: string[];
 }
 
 export interface DownloadProgressEvent {
@@ -69,11 +76,13 @@ export class TauriApiClient {
 
   // Запуск основной стратегии (аналог general.bat) без .bat
   async runDefaultStrategy(options?: {
+    strategyId?: string | null;
     gameFilterTcp?: string;
     gameFilterUdp?: string;
   }): Promise<void> {
-    const { gameFilterTcp, gameFilterUdp } = options ?? {};
+    const { strategyId, gameFilterTcp, gameFilterUdp } = options ?? {};
     await this.call<void>("run_default_strategy", {
+      strategy_id: strategyId ?? null,
       game_filter_tcp: gameFilterTcp ?? "",
       game_filter_udp: gameFilterUdp ?? "",
     });

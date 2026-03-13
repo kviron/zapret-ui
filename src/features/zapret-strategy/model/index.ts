@@ -3,9 +3,11 @@ import { tauriApiClient, type ZapretStrategyDto } from "@/shared/api/tauri-api-c
 
 export type StrategyId = "auto" | string;
 
+/** Глобальный выбор стратегии (для передачи в runDefaultStrategy из App). */
+export const [selectedStrategyId, setSelectedStrategyId] = createSignal<StrategyId>("auto");
+
 export const createZapretStrategyModel = () => {
   const [strategies, setStrategies] = createSignal<ZapretStrategyDto[]>([]);
-  const [selectedId, setSelectedId] = createSignal<StrategyId>("auto");
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
 
@@ -28,8 +30,8 @@ export const createZapretStrategyModel = () => {
 
   return {
     strategies,
-    selectedId,
-    setSelectedId,
+    selectedId: selectedStrategyId,
+    setSelectedId: setSelectedStrategyId,
     isLoading,
     error,
   };

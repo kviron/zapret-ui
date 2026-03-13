@@ -3,6 +3,7 @@ import { tauriApiClient } from "@/shared/api/tauri-api-client";
 import { Button } from "@/shared/ui/button";
 import { Heading, Text } from "@/shared/ui/typography";
 import { ZapretListsEditor } from "@/features/zapret-lists/ui/ZapretListsEditor";
+import { selectedStrategyId } from "@/features/zapret-strategy/model";
 import { ZapretStrategySelect } from "@/features/zapret-strategy/ui/ZapretStrategySelect";
 
 const App = () => {
@@ -28,7 +29,9 @@ const App = () => {
     setIsBusy(true);
     setError(null);
     try {
-      await tauriApiClient.runDefaultStrategy();
+      await tauriApiClient.runDefaultStrategy({
+        strategyId: selectedStrategyId() === "auto" ? null : selectedStrategyId(),
+      });
       await refreshStatus();
     } catch (e) {
       console.error(e);

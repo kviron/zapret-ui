@@ -15,69 +15,273 @@ struct ZapretLists {
     list_general_user: String,
     list_exclude: String,
     list_exclude_user: String,
+    list_google: String,
     ipset_all: String,
     ipset_exclude: String,
     ipset_exclude_user: String,
 }
 
+/// Параметры стратегии для запуска winws (без списков — они в сторе).
+/// protocols — описание портов (TCP/UDP), modes — типы DPI-desync, args — шаблон аргументов с плейсхолдерами.
 #[derive(Clone, Serialize, Deserialize)]
 struct ZapretStrategy {
     id: String,
     label: String,
     description: String,
+    /// Человекочитаемое описание портов, напр. "TCP: 80, 443, 2053…; UDP: 443, 19294-19344…"
+    protocols: String,
+    /// Режимы обхода DPI, напр. "fake, multisplit, hostfakesplit"
+    modes: String,
+    /// Аргументы для winws.exe. Плейсхолдеры: {list_general}, {list_general_user}, {list_exclude}, {list_exclude_user}, {list_google}, {ipset_all}, {ipset_exclude}, {ipset_exclude_user}, {bin}, {game_tcp}, {game_udp}
+    args: Vec<String>,
+}
+
+/// Аргументы стратегии default (general.bat) с плейсхолдерами для путей к спискам и bin.
+fn default_strategy_args() -> Vec<String> {
+    vec![
+        "--wf-tcp=80,443,2053,2083,2087,2096,8443,{game_tcp}".into(),
+        "--wf-udp=443,19294-19344,50000-50100,{game_udp}".into(),
+        "--filter-udp=443".into(),
+        "--hostlist={list_general}".into(),
+        "--hostlist={list_general_user}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fake-quic={bin}quic_initial_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-udp=19294-19344,50000-50100".into(),
+        "--filter-l7=discord,stun".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--new".into(),
+        "--filter-tcp=2053,2083,2087,2096,8443".into(),
+        "--hostlist-domains=discord.media".into(),
+        "--dpi-desync=multisplit".into(),
+        "--dpi-desync-split-seqovl=681".into(),
+        "--dpi-desync-split-pos=1".into(),
+        "--dpi-desync-split-seqovl-pattern={bin}tls_clienthello_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-tcp=443".into(),
+        "--hostlist={list_google}".into(),
+        "--ip-id=zero".into(),
+        "--dpi-desync=multisplit".into(),
+        "--dpi-desync-split-seqovl=681".into(),
+        "--dpi-desync-split-pos=1".into(),
+        "--dpi-desync-split-seqovl-pattern={bin}tls_clienthello_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-tcp=80,443".into(),
+        "--hostlist={list_general}".into(),
+        "--hostlist={list_general_user}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=multisplit".into(),
+        "--dpi-desync-split-seqovl=568".into(),
+        "--dpi-desync-split-pos=1".into(),
+        "--dpi-desync-split-seqovl-pattern={bin}tls_clienthello_4pda_to.bin".into(),
+        "--new".into(),
+        "--filter-udp=443".into(),
+        "--ipset={ipset_all}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fake-quic={bin}quic_initial_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-tcp=80,443,8443".into(),
+        "--ipset={ipset_all}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=multisplit".into(),
+        "--dpi-desync-split-seqovl=568".into(),
+        "--dpi-desync-split-pos=1".into(),
+        "--dpi-desync-split-seqovl-pattern={bin}tls_clienthello_4pda_to.bin".into(),
+        "--new".into(),
+        "--filter-tcp={game_tcp}".into(),
+        "--ipset={ipset_all}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=multisplit".into(),
+        "--dpi-desync-any-protocol=1".into(),
+        "--dpi-desync-cutoff=n3".into(),
+        "--dpi-desync-split-seqovl=568".into(),
+        "--dpi-desync-split-pos=1".into(),
+        "--dpi-desync-split-seqovl-pattern={bin}tls_clienthello_4pda_to.bin".into(),
+        "--new".into(),
+        "--filter-udp={game_udp}".into(),
+        "--ipset={ipset_all}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=12".into(),
+        "--dpi-desync-any-protocol=1".into(),
+        "--dpi-desync-fake-unknown-udp={bin}quic_initial_www_google_com.bin".into(),
+        "--dpi-desync-cutoff=n2".into(),
+    ]
 }
 
 fn built_in_strategies() -> Vec<ZapretStrategy> {
+    let default_args = default_strategy_args();
     vec![
         ZapretStrategy {
             id: "default".into(),
             label: "Default".into(),
             description: "Основная стратегия general.bat".into(),
+            protocols: "TCP: 80, 443, 2053, 2083, 2087, 2096, 8443 + GameFilter; UDP: 443, 19294-19344, 50000-50100 + GameFilter".into(),
+            modes: "fake, multisplit".into(),
+            args: default_args.clone(),
         },
         ZapretStrategy {
             id: "ALT".into(),
             label: "ALT".into(),
             description: "Альтернативная стратегия general (ALT).bat".into(),
+            protocols: "TCP: 80, 443, 2053… + GameFilter; UDP: 443, 19294-19344… + GameFilter".into(),
+            modes: "fake, fakedsplit".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT2".into(),
             label: "ALT2".into(),
             description: "Альтернативная стратегия general (ALT2).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT2".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT3".into(),
             label: "ALT3".into(),
             description: "Альтернативная стратегия general (ALT3).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "fake, hostfakesplit".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT4".into(),
             label: "ALT4".into(),
             description: "Альтернативная стратегия general (ALT4).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT4".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT5".into(),
             label: "ALT5".into(),
             description: "Альтернативная стратегия general (ALT5).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT5".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT6".into(),
             label: "ALT6".into(),
             description: "Альтернативная стратегия general (ALT6).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT6".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT7".into(),
             label: "ALT7".into(),
             description: "Альтернативная стратегия general (ALT7).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT7".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT8".into(),
             label: "ALT8".into(),
             description: "Альтернативная стратегия general (ALT8).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT8".into(),
+            args: vec![],
         },
         ZapretStrategy {
             id: "ALT9".into(),
             label: "ALT9".into(),
             description: "Альтернативная стратегия general (ALT9).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT9".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "ALT10".into(),
+            label: "ALT10".into(),
+            description: "Альтернативная стратегия general (ALT10).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT10".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "ALT11".into(),
+            label: "ALT11".into(),
+            description: "Альтернативная стратегия general (ALT11).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "Вариант ALT11".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "FAKE_TLS_AUTO".into(),
+            label: "FAKE TLS AUTO".into(),
+            description: "Стратегия general (FAKE TLS AUTO).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "FAKE TLS AUTO".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "FAKE_TLS_AUTO_ALT".into(),
+            label: "FAKE TLS AUTO ALT".into(),
+            description: "Стратегия general (FAKE TLS AUTO ALT).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "FAKE TLS AUTO ALT".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "FAKE_TLS_AUTO_ALT2".into(),
+            label: "FAKE TLS AUTO ALT2".into(),
+            description: "Стратегия general (FAKE TLS AUTO ALT2).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "FAKE TLS AUTO ALT2".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "FAKE_TLS_AUTO_ALT3".into(),
+            label: "FAKE TLS AUTO ALT3".into(),
+            description: "Стратегия general (FAKE TLS AUTO ALT3).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "FAKE TLS AUTO ALT3".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "SIMPLE_FAKE".into(),
+            label: "SIMPLE FAKE".into(),
+            description: "Стратегия general (SIMPLE FAKE).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "SIMPLE FAKE".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "SIMPLE_FAKE_ALT".into(),
+            label: "SIMPLE FAKE ALT".into(),
+            description: "Стратегия general (SIMPLE FAKE ALT).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "SIMPLE FAKE ALT".into(),
+            args: vec![],
+        },
+        ZapretStrategy {
+            id: "SIMPLE_FAKE_ALT2".into(),
+            label: "SIMPLE FAKE ALT2".into(),
+            description: "Стратегия general (SIMPLE FAKE ALT2).bat".into(),
+            protocols: "TCP/UDP как в default".into(),
+            modes: "SIMPLE FAKE ALT2".into(),
+            args: vec![],
         },
     ]
 }
@@ -188,6 +392,7 @@ fn apply_zapret_preset(
     lists.list_general_user = read_list_file(&lists_dir.join("list-general-user.txt"));
     lists.list_exclude = read_list_file(&lists_dir.join("list-exclude.txt"));
     lists.list_exclude_user = read_list_file(&lists_dir.join("list-exclude-user.txt"));
+    lists.list_google = read_list_file(&lists_dir.join("list-google.txt"));
     lists.ipset_all = read_list_file(&lists_dir.join("ipset-all.txt"));
     lists.ipset_exclude = read_list_file(&lists_dir.join("ipset-exclude.txt"));
     lists.ipset_exclude_user = read_list_file(&lists_dir.join("ipset-exclude-user.txt"));
@@ -202,11 +407,49 @@ fn apply_zapret_preset(
     Ok(lists)
 }
 
-// Запуск основной стратегии general.bat без использования .bat файла
-// Параметры game_filter_tcp/game_filter_udp можно передавать из UI (то, что раньше шло из GameFilterTCP/GameFilterUDP)
+fn substitute_strategy_args(
+    args: &[String],
+    paths: &StrategyPaths,
+    game_tcp: &str,
+    game_udp: &str,
+) -> Vec<String> {
+    let bin_suffix = format!("{}\\", paths.bin.display());
+    args.iter()
+        .map(|arg| {
+            let s = arg
+                .replace("{list_general}", &paths.list_general.to_string_lossy())
+                .replace("{list_general_user}", &paths.list_general_user.to_string_lossy())
+                .replace("{list_exclude}", &paths.list_exclude.to_string_lossy())
+                .replace("{list_exclude_user}", &paths.list_exclude_user.to_string_lossy())
+                .replace("{list_google}", &paths.list_google.to_string_lossy())
+                .replace("{ipset_all}", &paths.ipset_all.to_string_lossy())
+                .replace("{ipset_exclude}", &paths.ipset_exclude.to_string_lossy())
+                .replace("{ipset_exclude_user}", &paths.ipset_exclude_user.to_string_lossy())
+                .replace("{bin}", &bin_suffix)
+                .replace("{game_tcp}", game_tcp)
+                .replace("{game_udp}", game_udp);
+            s
+        })
+        .collect()
+}
+
+struct StrategyPaths<'a> {
+    bin: &'a PathBuf,
+    list_general: &'a PathBuf,
+    list_general_user: &'a PathBuf,
+    list_exclude: &'a PathBuf,
+    list_exclude_user: &'a PathBuf,
+    list_google: &'a PathBuf,
+    ipset_all: &'a PathBuf,
+    ipset_exclude: &'a PathBuf,
+    ipset_exclude_user: &'a PathBuf,
+}
+
+// Запуск стратегии: strategy_id — id из get_zapret_strategies (или None/auto = default).
 #[tauri::command]
 fn run_default_strategy(
     app: tauri::AppHandle,
+    strategy_id: Option<String>,
     game_filter_tcp: Option<String>,
     game_filter_udp: Option<String>,
 ) -> Result<(), String> {
@@ -259,6 +502,8 @@ fn run_default_strategy(
         write_list_file(&temp_lists_dir, "list-general-user.txt", &lists_data.list_general_user)?;
     let list_exclude_path =
         write_list_file(&temp_lists_dir, "list-exclude.txt", &lists_data.list_exclude)?;
+    let list_google_path =
+        write_list_file(&temp_lists_dir, "list-google.txt", &lists_data.list_google)?;
     let list_exclude_user_path =
         write_list_file(&temp_lists_dir, "list-exclude-user.txt", &lists_data.list_exclude_user)?;
     let ipset_all_path =
@@ -274,136 +519,36 @@ fn run_default_strategy(
     let game_tcp = game_filter_tcp.unwrap_or_default();
     let game_udp = game_filter_udp.unwrap_or_default();
 
-    let mut wf_tcp = vec!["80", "443", "2053", "2083", "2087", "2096", "8443"];
-    if !game_tcp.trim().is_empty() {
-        wf_tcp.push(&game_tcp);
-    }
+    let paths = StrategyPaths {
+        bin: &bin,
+        list_general: &list_general_path,
+        list_general_user: &list_general_user_path,
+        list_exclude: &list_exclude_path,
+        list_exclude_user: &list_exclude_user_path,
+        list_google: &list_google_path,
+        ipset_all: &ipset_all_path,
+        ipset_exclude: &ipset_exclude_path,
+        ipset_exclude_user: &ipset_exclude_user_path,
+    };
 
-    let mut wf_udp = vec!["443", "19294-19344", "50000-50100"];
-    if !game_udp.trim().is_empty() {
-        wf_udp.push(&game_udp);
-    }
-
-    let wf_tcp_arg = wf_tcp.join(",");
-    let wf_udp_arg = wf_udp.join(",");
+    let strategies = built_in_strategies();
+    let strategy = strategy_id
+        .as_ref()
+        .filter(|id| !id.is_empty() && id.as_str() != "auto")
+        .and_then(|id| strategies.iter().find(|s| s.id == *id))
+        .or_else(|| strategies.first());
+    let args_template: Vec<String> = strategy
+        .map(|s| {
+            if s.args.is_empty() {
+                default_strategy_args()
+            } else {
+                s.args.clone()
+            }
+        })
+        .unwrap_or_else(default_strategy_args);
+    let args = substitute_strategy_args(&args_template, &paths, &game_tcp, &game_udp);
 
     let winws = bin.join("winws.exe");
-
-    // Собираем аргументы в один список, чтобы передать их в PowerShell / Start-Process -Verb RunAs
-    let args: Vec<String> = vec![
-        format!("--wf-tcp={}", wf_tcp_arg),
-        format!("--wf-udp={}", wf_udp_arg),
-        "--filter-udp=443".into(),
-        format!("--hostlist={}", list_general_path.display()),
-        format!("--hostlist={}", list_general_user_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_user_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_user_path.display()),
-        "--dpi-desync=fake".into(),
-        "--dpi-desync-repeats=6".into(),
-        format!(
-            "--dpi-desync-fake-quic={}",
-            bin.join("quic_initial_www_google_com.bin").display()
-        ),
-        "--new".into(),
-        "--filter-udp=19294-19344,50000-50100".into(),
-        "--filter-l7=discord,stun".into(),
-        "--dpi-desync=fake".into(),
-        "--dpi-desync-repeats=6".into(),
-        "--new".into(),
-        "--filter-tcp=2053,2083,2087,2096,8443".into(),
-        "--hostlist-domains=discord.media".into(),
-        "--dpi-desync=multisplit".into(),
-        "--dpi-desync-split-seqovl=681".into(),
-        "--dpi-desync-split-pos=1".into(),
-        format!(
-            "--dpi-desync-split-seqovl-pattern={}",
-            bin.join("tls_clienthello_www_google_com.bin").display()
-        ),
-        "--new".into(),
-        "--filter-tcp=443".into(),
-        format!("--hostlist={}", ipset_all_path.display()), // при необходимости замени на отдельное поле
-        "--ip-id=zero".into(),
-        "--dpi-desync=multisplit".into(),
-        "--dpi-desync-split-seqovl=681".into(),
-        "--dpi-desync-split-pos=1".into(),
-        format!(
-            "--dpi-desync-split-seqovl-pattern={}",
-            bin.join("tls_clienthello_www_google_com.bin").display()
-        ),
-        "--new".into(),
-        "--filter-tcp=80,443".into(),
-        format!("--hostlist={}", list_general_path.display()),
-        format!("--hostlist={}", list_general_user_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_user_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_user_path.display()),
-        "--dpi-desync=multisplit".into(),
-        "--dpi-desync-split-seqovl=568".into(),
-        "--dpi-desync-split-pos=1".into(),
-        format!(
-            "--dpi-desync-split-seqovl-pattern={}",
-            bin.join("tls_clienthello_4pda_to.bin").display()
-        ),
-        "--new".into(),
-        "--filter-udp=443".into(),
-        format!("--ipset={}", ipset_all_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_user_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_user_path.display()),
-        "--dpi-desync=fake".into(),
-        "--dpi-desync-repeats=6".into(),
-        format!(
-            "--dpi-desync-fake-quic={}",
-            bin.join("quic_initial_www_google_com.bin").display()
-        ),
-        "--new".into(),
-        "--filter-tcp=80,443,8443".into(),
-        format!("--ipset={}", ipset_all_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_path.display()),
-        format!("--hostlist-exclude={}", list_exclude_user_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_user_path.display()),
-        "--dpi-desync=multisplit".into(),
-        "--dpi-desync-split-seqovl=568".into(),
-        "--dpi-desync-split-pos=1".into(),
-        format!(
-            "--dpi-desync-split-seqovl-pattern={}",
-            bin.join("tls_clienthello_4pda_to.bin").display()
-        ),
-        "--new".into(),
-        format!("--filter-tcp={}", game_tcp),
-        format!("--ipset={}", ipset_all_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_user_path.display()),
-        "--dpi-desync=multisplit".into(),
-        "--dpi-desync-any-protocol=1".into(),
-        "--dpi-desync-cutoff=n3".into(),
-        "--dpi-desync-split-seqovl=568".into(),
-        "--dpi-desync-split-pos=1".into(),
-        format!(
-            "--dpi-desync-split-seqovl-pattern={}",
-            bin.join("tls_clienthello_4pda_to.bin").display()
-        ),
-        "--new".into(),
-        format!("--filter-udp={}", game_udp),
-        format!("--ipset={}", ipset_all_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_path.display()),
-        format!("--ipset-exclude={}", ipset_exclude_user_path.display()),
-        "--dpi-desync=fake".into(),
-        "--dpi-desync-repeats=12".into(),
-        "--dpi-desync-any-protocol=1".into(),
-        format!(
-            "--dpi-desync-fake-unknown-udp={}",
-            bin.join("quic_initial_www_google_com.bin").display()
-        ),
-        "--dpi-desync-cutoff=n2".into(),
-    ];
-
-    // Собираем строку для PowerShell и запускаем winws.exe с запросом прав администратора (UAC)
     let args_joined = args.join(" ");
     let ps_command = format!(
         "Start-Process -FilePath '{}' -ArgumentList '{}' -Verb RunAs",

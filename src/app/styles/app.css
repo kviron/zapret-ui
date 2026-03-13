@@ -1,3 +1,21 @@
+/* --- Нормализующие стили --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
 .logo.vite:hover {
   filter: drop-shadow(0 0 2em #747bff);
 }
@@ -21,13 +39,80 @@
   -webkit-text-size-adjust: 100%;
 }
 
+/* --- App layout (FSD: app/layouts) --- */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout__sidebar {
+  width: 12rem;
+  flex-shrink: 0;
+  background-color: #e8e8ec;
+  border-right: 1px solid #d0d0d6;
+  overflow: auto;
+}
+
+.app-layout__nav {
+  padding: 1rem 0;
+}
+
+.app-layout__nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-layout__nav-link {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: #0f0f0f;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.15s;
+}
+
+.app-layout__nav-link:hover {
+  background-color: #dddce2;
+}
+
+.app-layout__nav-link--active {
+  background-color: #d0d0d6;
+}
+
+.app-layout__content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-layout__sidebar {
+    background-color: #1e1e24;
+    border-right-color: #2f2f38;
+  }
+  .app-layout__nav-link {
+    color: #f6f6f6;
+  }
+  .app-layout__nav-link:hover {
+    background-color: #2f2f38;
+  }
+  .app-layout__nav-link--active {
+    background-color: #2f2f38;
+  }
+}
+
 .container {
   margin: 0;
-  padding-top: 10vh;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .logo {

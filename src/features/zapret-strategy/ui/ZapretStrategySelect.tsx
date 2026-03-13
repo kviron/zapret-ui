@@ -14,8 +14,8 @@ export const ZapretStrategySelect = () => {
     },
     ...strategies().map((s) => ({
       value: s.id,
-      label: s.label,
-      description: s.description,
+      label: s.modes ? `${s.label} — ${s.modes}` : s.label,
+      description: [s.description, s.protocols].filter(Boolean).join(" • "),
     })),
   ]);
 

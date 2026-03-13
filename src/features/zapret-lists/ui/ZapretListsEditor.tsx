@@ -80,6 +80,15 @@ export const ZapretListsEditor = () => {
             </label>
 
             <label>
+              <Text>list-google.txt</Text>
+              <textarea
+                rows={3}
+                value={data().list_google}
+                onInput={(e) => updateField("list_google")(e.currentTarget.value)}
+              />
+            </label>
+
+            <label>
               <Text>ipset-all.txt</Text>
               <textarea
                 rows={3}
