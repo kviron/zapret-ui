@@ -6,6 +6,11 @@ use std::{
     sync::Mutex,
 };
 
+use log::{debug, error, info};
+
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 use serde::{Deserialize, Serialize};
 use tauri::{Manager, State};
 
@@ -128,6 +133,109 @@ fn default_strategy_args() -> Vec<String> {
     ]
 }
 
+/// Аргументы стратегии ALT (general (ALT).bat): fake + fakedsplit, fooling=ts, fakedsplit-pattern=0x00.
+fn alt_strategy_args() -> Vec<String> {
+    vec![
+        "--wf-tcp=80,443,2053,2083,2087,2096,8443,{game_tcp}".into(),
+        "--wf-udp=443,19294-19344,50000-50100,{game_udp}".into(),
+        "--filter-udp=443".into(),
+        "--hostlist={list_general}".into(),
+        "--hostlist={list_general_user}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fake-quic={bin}quic_initial_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-udp=19294-19344,50000-50100".into(),
+        "--filter-l7=discord,stun".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--new".into(),
+        "--filter-tcp=2053,2083,2087,2096,8443".into(),
+        "--hostlist-domains=discord.media".into(),
+        "--dpi-desync=fake,fakedsplit".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fooling=ts".into(),
+        "--dpi-desync-fakedsplit-pattern=0x00".into(),
+        "--dpi-desync-fake-tls={bin}tls_clienthello_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-tcp=443".into(),
+        "--hostlist={list_google}".into(),
+        "--ip-id=zero".into(),
+        "--dpi-desync=fake,fakedsplit".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fooling=ts".into(),
+        "--dpi-desync-fakedsplit-pattern=0x00".into(),
+        "--dpi-desync-fake-tls={bin}tls_clienthello_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-tcp=80,443".into(),
+        "--hostlist={list_general}".into(),
+        "--hostlist={list_general_user}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake,fakedsplit".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fooling=ts".into(),
+        "--dpi-desync-fakedsplit-pattern=0x00".into(),
+        "--dpi-desync-fake-tls={bin}stun.bin".into(),
+        "--dpi-desync-fake-tls={bin}tls_clienthello_www_google_com.bin".into(),
+        "--dpi-desync-fake-http={bin}tls_clienthello_max_ru.bin".into(),
+        "--new".into(),
+        "--filter-udp=443".into(),
+        "--ipset={ipset_all}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fake-quic={bin}quic_initial_www_google_com.bin".into(),
+        "--new".into(),
+        "--filter-tcp=80,443,8443".into(),
+        "--ipset={ipset_all}".into(),
+        "--hostlist-exclude={list_exclude}".into(),
+        "--hostlist-exclude={list_exclude_user}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake,fakedsplit".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-fooling=ts".into(),
+        "--dpi-desync-fakedsplit-pattern=0x00".into(),
+        "--dpi-desync-fake-tls={bin}stun.bin".into(),
+        "--dpi-desync-fake-tls={bin}tls_clienthello_www_google_com.bin".into(),
+        "--dpi-desync-fake-http={bin}tls_clienthello_max_ru.bin".into(),
+        "--new".into(),
+        "--filter-tcp={game_tcp}".into(),
+        "--ipset={ipset_all}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake,fakedsplit".into(),
+        "--dpi-desync-repeats=6".into(),
+        "--dpi-desync-any-protocol=1".into(),
+        "--dpi-desync-cutoff=n4".into(),
+        "--dpi-desync-fooling=ts".into(),
+        "--dpi-desync-fakedsplit-pattern=0x00".into(),
+        "--dpi-desync-fake-tls={bin}stun.bin".into(),
+        "--dpi-desync-fake-tls={bin}tls_clienthello_www_google_com.bin".into(),
+        "--dpi-desync-fake-http={bin}tls_clienthello_max_ru.bin".into(),
+        "--new".into(),
+        "--filter-udp={game_udp}".into(),
+        "--ipset={ipset_all}".into(),
+        "--ipset-exclude={ipset_exclude}".into(),
+        "--ipset-exclude={ipset_exclude_user}".into(),
+        "--dpi-desync=fake".into(),
+        "--dpi-desync-repeats=12".into(),
+        "--dpi-desync-any-protocol=1".into(),
+        "--dpi-desync-fake-unknown-udp={bin}quic_initial_www_google_com.bin".into(),
+        "--dpi-desync-cutoff=n3".into(),
+    ]
+}
+
 fn built_in_strategies() -> Vec<ZapretStrategy> {
     let default_args = default_strategy_args();
     vec![
@@ -145,7 +253,7 @@ fn built_in_strategies() -> Vec<ZapretStrategy> {
             description: "Альтернативная стратегия general (ALT).bat".into(),
             protocols: "TCP: 80, 443, 2053… + GameFilter; UDP: 443, 19294-19344… + GameFilter".into(),
             modes: "fake, fakedsplit".into(),
-            args: vec![],
+            args: alt_strategy_args(),
         },
         ZapretStrategy {
             id: "ALT2".into(),
@@ -453,6 +561,17 @@ fn run_default_strategy(
     game_filter_tcp: Option<String>,
     game_filter_udp: Option<String>,
 ) -> Result<(), String> {
+    let strategy_name = strategy_id
+        .as_ref()
+        .map(|s| s.as_str())
+        .unwrap_or("auto");
+    info!(
+        "run_default_strategy: strategy_id={}, game_tcp={:?}, game_udp={:?}",
+        strategy_name,
+        game_filter_tcp.as_deref().unwrap_or("(default)"),
+        game_filter_udp.as_deref().unwrap_or("(default)")
+    );
+
     // bin\ лежит в ресурсах приложения: resources/zapret/bin
     let zapret_base: PathBuf = app
         .path()
@@ -468,8 +587,11 @@ fn run_default_strategy(
     fs::create_dir_all(&temp_lists_dir)
         .map_err(|e| format!("failed to create temp lists dir: {e}"))?;
 
-    if !bin.join("winws.exe").exists() {
-        return Err(format!("winws.exe not found in {:?}", bin));
+    let winws_path = bin.join("winws.exe");
+    if !winws_path.exists() {
+        let msg = format!("winws.exe not found in {:?}", bin);
+        error!("{}", msg);
+        return Err(msg);
     }
 
     // Подготовка списков по умолчанию и включение TCP timestamps, как делали general.bat + service.bat
@@ -516,8 +638,13 @@ fn run_default_strategy(
         &lists_data.ipset_exclude_user,
     )?;
 
-    let game_tcp = game_filter_tcp.unwrap_or_default();
-    let game_udp = game_filter_udp.unwrap_or_default();
+    // Как в service.bat: при выключенном Game Filter порты 12 (фильтр по ним не срабатывает по смыслу).
+    let game_tcp = game_filter_tcp
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "12".to_string());
+    let game_udp = game_filter_udp
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "12".to_string());
 
     let paths = StrategyPaths {
         bin: &bin,
@@ -548,33 +675,53 @@ fn run_default_strategy(
         .unwrap_or_else(default_strategy_args);
     let args = substitute_strategy_args(&args_template, &paths, &game_tcp, &game_udp);
 
-    let winws = bin.join("winws.exe");
-    let args_joined = args.join(" ");
-    let ps_command = format!(
-        "Start-Process -FilePath '{}' -ArgumentList '{}' -Verb RunAs",
-        winws.display(),
-        args_joined
+    info!(
+        "winws: bin={:?}, args_count={}, current_dir={:?}",
+        winws_path,
+        args.len(),
+        bin
     );
+    debug!("winws args: {:?}", args);
 
-    Command::new("powershell")
-        .current_dir(&bin)
-        .args(["-NoProfile", "-Command", &ps_command])
-        .spawn()
-        .map_err(|e| format!("failed to start winws.exe via PowerShell: {e}"))?;
+    // Запуск напрямую, без PowerShell. Права — как у процесса приложения (запусти приложение от админа, если нужны права для winws).
+    let mut cmd = Command::new(&winws_path);
+    cmd.current_dir(&bin).args(&args);
 
-    Ok(())
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW — окно консоли не показывается
+
+    match cmd.spawn() {
+        Ok(child) => {
+            info!("winws.exe started successfully, PID: {}", child.id());
+            Ok(())
+        }
+        Err(e) => {
+            let msg = format!("failed to start winws.exe: {e}");
+            error!("{}", msg);
+            Err(msg)
+        }
+    }
 }
 
 // Остановка zapret (winws.exe) через taskkill
 #[tauri::command]
 fn stop_zapret() -> Result<(), String> {
-    Command::new("cmd")
+    info!("stop_zapret: sending taskkill /F /IM winws.exe");
+    match Command::new("cmd")
         .arg("/C")
         .arg("taskkill /F /IM winws.exe")
         .spawn()
-        .map_err(|e| format!("failed to stop winws.exe: {e}"))?;
-
-    Ok(())
+    {
+        Ok(_) => {
+            info!("stop_zapret: taskkill command spawned");
+            Ok(())
+        }
+        Err(e) => {
+            let msg = format!("failed to stop winws.exe: {e}");
+            error!("{}", msg);
+            Err(msg)
+        }
+    }
 }
 
 // Проверка: запущен ли сейчас winws.exe
@@ -592,6 +739,12 @@ fn is_zapret_running() -> Result<bool, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Логирование: RUST_LOG=info (по умолчанию) или RUST_LOG=debug для полного вывода аргументов winws.
+    let _ = env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info"),
+    )
+    .try_init();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(ZapretLists::default()))
