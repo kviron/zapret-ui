@@ -1,6 +1,6 @@
 import { createSignal, onMount } from "solid-js";
 import { tauriApiClient } from "@/shared/api/tauri-api-client";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui";
 import { Heading, Text } from "@/shared/ui/typography";
 import { ZapretListsEditor } from "@/features/zapret-lists/ui/ZapretListsEditor";
 import { selectedStrategyId } from "@/features/zapret-strategy/model";
@@ -65,10 +65,10 @@ const App = () => {
         </Text>
 
         <div class="row" style={{ "margin-top": "1rem", gap: "0.5rem" }}>
-          <Button type="button" disabled={isBusy()} onClick={() => void handleStart()}>
+          <Button onClick={() => void handleStart()}>
             {isBusy() && !isRunning() ? "Запуск..." : "Запустить"}
           </Button>
-          <Button type="button" disabled={isBusy()} onClick={() => void handleStop()}>
+          <Button variant="outline" color="primary" disabled={isBusy()} onClick={() => void handleStop()}>
             {isBusy() && isRunning() ? "Остановка..." : "Остановить"}
           </Button>
         </div>

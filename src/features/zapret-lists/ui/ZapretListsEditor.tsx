@@ -1,6 +1,6 @@
 import { Show } from "solid-js";
 import { createZapretListsModel } from "../model";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui";
 import { Heading, Text } from "@/shared/ui/typography";
 import { tauriApiClient } from "@/shared/api/tauri-api-client";
 

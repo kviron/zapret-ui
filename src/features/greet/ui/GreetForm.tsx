@@ -1,5 +1,5 @@
 import { createGreetModel } from "../model";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui";
 
 export const GreetForm = () => {
   const { name, setName, greetMsg, greet } = createGreetModel();

@@ -1,7 +1,7 @@
+import path from "node:path";
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
@@ -10,7 +10,8 @@ export default defineConfig(async () => ({
 
   resolve: {
     alias: {
-      "@": "/src",
+      "@": path.resolve(__dirname, "src"),
+      "@styled-system": path.resolve(__dirname, "styled-system"),
     },
   },
 

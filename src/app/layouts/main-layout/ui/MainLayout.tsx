@@ -1,4 +1,6 @@
 import type { JSX } from "solid-js";
+import { content, header, sidebar, wrapper } from "./MainLayout.styles";  
+import { For } from "solid-js";
 
 type MainLayoutProps = {
   children: JSX.Element;
@@ -6,30 +8,32 @@ type MainLayoutProps = {
 
 const navItems = [
   { label: "Главная", href: "#", active: true },
+  { label: "Настройки", href: "#", active: false },
   // Позже: { label: "Списки", href: "#lists" }, { label: "Настройки", href: "#settings" },
 ] as const;
 
 export const MainLayout = (props: MainLayoutProps) => {
   return (
-    <div class="app-layout">
-      <aside class="app-layout__sidebar">
+    <div class={wrapper}>
+      <aside class={sidebar}>
         <nav class="app-layout__nav" aria-label="Главное меню">
-          <ul class="app-layout__nav-list">
-            {navItems.map((item) => (
-              <li>
-                <a
-                  href={item.href}
-                  class="app-layout__nav-link"
-                  classList={{ "app-layout__nav-link--active": item.active }}
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))}
+          <ul>
+            <For each={navItems}>
+              {(item) => (
+                <li>
+                  <a href={item.href}>
+                    {item.label}
+                  </a>
+                </li>
+              )}
+            </For>
           </ul>
         </nav>
       </aside>
-      <div class="app-layout__content">{props.children}</div>
+        <header class={header}>
+          <h1>Zapret</h1>
+        </header>
+        <div class={content}>{props.children}</div>
     </div>
   );
 };
